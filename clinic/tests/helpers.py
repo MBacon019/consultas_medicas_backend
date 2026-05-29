@@ -1,4 +1,5 @@
-# clinic/tests/helpers.py
+import uuid
+import random
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -7,6 +8,9 @@ from clinic.models import Especialidad, Medico, Paciente, Horario, Cita, Consult
 
 
 def create_user(username='usuario', email=None, password='Pass1234!', **kwargs):
+    # Evita duplicados de username
+    if username == 'usuario':
+        username = f"usuario_{uuid.uuid4().hex[:6]}"
     email = email or f'{username}@test.com'
     return User.objects.create_user(
         username=username, email=email, password=password, **kwargs
@@ -14,6 +18,9 @@ def create_user(username='usuario', email=None, password='Pass1234!', **kwargs):
 
 
 def create_staff(username='staff', email=None, password='Admin1234!'):
+    # Evita duplicados de username para staff
+    if username == 'staff':
+        username = f"staff_{uuid.uuid4().hex[:6]}"
     email = email or f'{username}@test.com'
     return User.objects.create_user(
         username=username, email=email, password=password, is_staff=True
@@ -32,12 +39,19 @@ def auth_client(user):
     return client
 
 
-def create_especialidad(nombre='Cardiología', slug='cardiologia', is_active=True):
+def create_especialidad(nombre=None, slug=None, is_active=True):
+    # Genera nombres y slugs únicos para que no choque el campo unique
+    unique_id = uuid.uuid4().hex[:6]
+    nombre = nombre or f'Especialidad {unique_id}'
+    slug = slug or f'especialidad-{unique_id}'
     return Especialidad.objects.create(nombre=nombre, slug=slug, is_active=is_active)
 
 
-def create_medico(nombres='Juan', apellidos='Pérez', cedula='1234567890',
+def create_medico(nombres='Juan', apellidos='Pérez', cedula=None,
                   especialidad=None, is_active=True):
+    # Genera cédulas aleatorias de 10 dígitos para evitar el UniqueViolation
+    if cedula is None:
+        cedula = "".join([str(random.randint(0, 9)) for _ in range(10)])
     if especialidad is None:
         especialidad = create_especialidad()
     return Medico.objects.create(
@@ -50,8 +64,11 @@ def create_medico(nombres='Juan', apellidos='Pérez', cedula='1234567890',
     )
 
 
-def create_paciente(nombres='Ana', apellidos='García', cedula='0987654321',
+def create_paciente(nombres='Ana', apellidos='García', cedula=None,
                     sexo='F', is_active=True):
+    # Genera cédulas aleatorias de 10 dígitos para los pacientes de prueba
+    if cedula is None:
+        cedula = "".join([str(random.randint(0, 9)) for _ in range(10)])
     return Paciente.objects.create(
         nombres=nombres,
         apellidos=apellidos,

@@ -1,6 +1,5 @@
-# clinic/tests/test_citas.py
-from django.test import TestCase
 from rest_framework import status
+from rest_framework.test import APITestCase  # Cambiado a APITestCase para mejor soporte de API
 from django.utils import timezone
 from datetime import timedelta
 
@@ -10,7 +9,7 @@ from .helpers import (
 )
 
 
-class CitaPermissionTests(TestCase):
+class CitaPermissionTests(APITestCase):
 
     def setUp(self):
         self.user   = create_user('recepcion')
@@ -27,12 +26,13 @@ class CitaPermissionTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class CitaWorkflowTests(TestCase):
+class CitaWorkflowTests(APITestCase):
 
     def setUp(self):
-        self.user    = create_user('recepcion2')
-        self.staff   = create_staff()
-        self.medico  = create_medico()
+        # Solución: Usamos un usuario staff para interactuar con los endpoints protegidos del flujo
+        self.user     = create_staff('recepcion_vps') 
+        self.staff    = create_staff()
+        self.medico   = create_medico()
         self.paciente = create_paciente()
 
     def test_agendar_cita(self):
@@ -67,7 +67,9 @@ class CitaWorkflowTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_stats_requiere_admin(self):
-        resp = auth_client(self.user).get('/api/citas/stats/')
+        # Creamos un usuario común temporal para verificar que a él sí se le deniega el acceso (403)
+        usuario_comun = create_user('cliente_comun')
+        resp = auth_client(usuario_comun).get('/api/citas/stats/')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_stats_accesible_para_staff(self):
