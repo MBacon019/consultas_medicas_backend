@@ -2,9 +2,9 @@ name: CI/CD ConsultasAPI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, develop]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   test:
@@ -60,10 +60,35 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Corrección: Cambiado 'main' por 'master' para que coincida con tu repositorio
+    if: github.ref == 'refs/heads/master'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to production
-        run: echo "Deploy step — configure your deployment here"
+      - name: Deploy to production via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Entrar a la carpeta del proyecto en el servidor
+            cd ${{ secrets.DEPLOY_PATH }}
+            
+            # 2. Descargar la última versión del código de GitHub
+            git pull origin master
+            
+            # 3. Activar el entorno virtual e instalar cambios (si los hay) con uv
+            export PATH="$HOME/.local/bin:$PATH"
+            uv sync
+            
+            # 4. Aplicar migraciones en la base de datos de producción
+            uv run manage.py migrate --noinput
+            
+            # 5. Recolectar archivos estáticos
+            uv run manage.py collectstatic --noinput
+            
+            # 6. Reiniciar Gunicorn para que tome el nuevo código de Python
+            sudo systemctl restart gunicorn-bacon_consultas
