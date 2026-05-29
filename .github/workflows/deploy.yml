@@ -29,12 +29,12 @@ jobs:
       SECRET_KEY: test-secret-key-ci
       DEBUG: "True"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
-      DB_NAME: consultasapi_prod_db       # Solución: Nombre diferente para que Django no choque
+      DB_NAME: consultasapi_test_db
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_HOST: localhost
       DB_PORT: "5432"
-      TEST_DB_NAME: consultasapi_test_db  # Este se queda como la base de datos de pruebas objetivo
+      TEST_DB_NAME: consultasapi_test_db
       CORS_ALLOW_ALL_ORIGINS: "True"
 
     steps:
@@ -51,11 +51,11 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run migrations
-        run: uv run manage.py migrate
+      # Nota: Quitamos el paso de "Run migrations" aquí porque chocaba con la DB. 
+      # El comando "test" de abajo creará y migrará todo automáticamente usando `--noinput`.
 
       - name: Run tests
-        run: uv run manage.py test clinic --verbosity=2
+        run: uv run manage.py test clinic --verbosity=2 --noinput
 
   deploy:
     needs: test
@@ -83,7 +83,7 @@ jobs:
             export PATH="$HOME/.local/bin:$PATH"
             uv sync
             
-            # 4. Correr migraciones en el entorno de producción
+            # 4. Correr migraciones reales en la base de datos de producción
             uv run manage.py migrate --noinput
             
             # 5. Colectar los archivos estáticos (CSS/JS del admin de Django)
