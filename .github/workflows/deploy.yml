@@ -29,12 +29,12 @@ jobs:
       SECRET_KEY: test-secret-key-ci
       DEBUG: "True"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
-      DB_NAME: consultasapi_test_db
+      DB_NAME: consultasapi_prod_db       # Solución: Nombre diferente para que Django no choque
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_HOST: localhost
       DB_PORT: "5432"
-      TEST_DB_NAME: consultasapi_test_db
+      TEST_DB_NAME: consultasapi_test_db  # Este se queda como la base de datos de pruebas objetivo
       CORS_ALLOW_ALL_ORIGINS: "True"
 
     steps:
@@ -60,7 +60,6 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    # Corrección: Cambiado 'main' por 'master' para que coincida con tu repositorio
     if: github.ref == 'refs/heads/master'
 
     steps:
@@ -74,21 +73,21 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            # 1. Entrar a la carpeta del proyecto en el servidor
+            # 1. Entrar a la carpeta del proyecto en el VPS
             cd ${{ secrets.DEPLOY_PATH }}
             
-            # 2. Descargar la última versión del código de GitHub
+            # 2. Bajar los últimos cambios desde la rama master de GitHub
             git pull origin master
             
-            # 3. Activar el entorno virtual e instalar cambios (si los hay) con uv
+            # 3. Asegurar la ruta de uv e instalar dependencias del entorno virtual
             export PATH="$HOME/.local/bin:$PATH"
             uv sync
             
-            # 4. Aplicar migraciones en la base de datos de producción
+            # 4. Correr migraciones en el entorno de producción
             uv run manage.py migrate --noinput
             
-            # 5. Recolectar archivos estáticos
+            # 5. Colectar los archivos estáticos (CSS/JS del admin de Django)
             uv run manage.py collectstatic --noinput
             
-            # 6. Reiniciar Gunicorn para que tome el nuevo código de Python
+            # 6. Reiniciar Gunicorn para aplicar el nuevo código Python de inmediato
             sudo systemctl restart gunicorn-bacon_consultas
