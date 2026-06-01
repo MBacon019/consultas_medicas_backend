@@ -74,3 +74,27 @@ uv run manage.py runserver
 ```bash
 uv run manage.py test clinic
 ```
+
+server {
+    listen 80;
+    server_name bacon-consultas.uaeftt-ute.site;
+
+    # Logs
+    access_log /var/log/nginx/bacon_consultas-access.log;
+    error_log  /var/log/nginx/bacon_consultas-error.log;
+
+    # Archivos estáticos (incluye CSS del admin de Django)
+    location /static/ {
+        alias /opt/shopapi/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Peticiones a la API via Gunicorn
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/run/gunicorn-bacon_consultas.sock;
+        proxy_read_timeout 90;
+        proxy_connect_timeout 90;
+    }
+}

@@ -2,9 +2,9 @@ name: CI/CD ConsultasAPI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, develop]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   test:
@@ -51,19 +51,43 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run migrations
-        run: uv run manage.py migrate
+      # Nota: Quitamos el paso de "Run migrations" aquí porque chocaba con la DB. 
+      # El comando "test" de abajo creará y migrará todo automáticamente usando `--noinput`.
 
       - name: Run tests
-        run: uv run manage.py test clinic --verbosity=2
+        run: uv run manage.py test clinic --verbosity=2 --noinput
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to production
-        run: echo "Deploy step — configure your deployment here"
+      - name: Deploy to production via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Entrar a la carpeta del proyecto en el VPS
+            cd ${{ secrets.DEPLOY_PATH }}
+            
+            # 2. Bajar los últimos cambios desde la rama master de GitHub
+            git pull origin master
+            
+            # 3. Asegurar la ruta de uv e instalar dependencias del entorno virtual
+            export PATH="$HOME/.local/bin:$PATH"
+            uv sync
+            
+            # 4. Correr migraciones reales en la base de datos de producción
+            uv run manage.py migrate --noinput
+            
+            # 5. Colectar los archivos estáticos (CSS/JS del admin de Django)
+            uv run manage.py collectstatic --noinput
+            
+            # 6. Reiniciar Gunicorn para aplicar el nuevo código Python de inmediato
+            sudo systemctl restart gunicorn-bacon_consultas
