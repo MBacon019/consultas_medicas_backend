@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      # Nota: Quitamos el paso de "Run migrations" aquí porque chocaba con la DB. 
+      # Nota: Quitamos el paso de "Run migrations" aquí porque chocaba con la DB.
       # El comando "test" de abajo creará y migrará todo automáticamente usando `--noinput`.
 
       - name: Run tests
@@ -75,19 +75,19 @@ jobs:
           script: |
             # 1. Entrar a la carpeta del proyecto en el VPS
             cd ${{ secrets.DEPLOY_PATH }}
-            
+
             # 2. Bajar los últimos cambios desde la rama master de GitHub
             git pull origin master
-            
+
             # 3. Asegurar la ruta de uv e instalar dependencias del entorno virtual
             export PATH="$HOME/.local/bin:$PATH"
             uv sync
-            
+
             # 4. Correr migraciones reales en la base de datos de producción
             uv run manage.py migrate --noinput
-            
+
             # 5. Colectar los archivos estáticos (CSS/JS del admin de Django)
             uv run manage.py collectstatic --noinput
-            
+
             # 6. Reiniciar Gunicorn para aplicar el nuevo código Python de inmediato
             sudo systemctl restart gunicorn-bacon_consultas
