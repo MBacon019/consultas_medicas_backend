@@ -14,7 +14,7 @@ API REST para gestión de consultas médicas, construida con Django + Django RES
 ## URL en producción
 
 ```
-http://bacon-consultas.uaeftt-ute.site/api/
+https://bacon-consultas.uaeftt-ute.site/api/
 ```
 
 ## 7 Tablas de Base de Datos
@@ -90,7 +90,7 @@ La API usa **JWT (JSON Web Tokens)**. Todos los endpoints excepto `/health/`, `/
 ### 1. Obtener token (login)
 
 ```bash
-curl -X POST http://bacon-consultas.uaeftt-ute.site/api/auth/login/ \
+curl -X POST https://bacon-consultas.uaeftt-ute.site/api/auth/login/ \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "tu_password"}'
 ```
@@ -109,14 +109,14 @@ Respuesta:
 ### 2. Usar el token en cada petición
 
 ```bash
-curl -X GET http://bacon-consultas.uaeftt-ute.site/api/pacientes/ \
+curl -X GET https://bacon-consultas.uaeftt-ute.site/api/pacientes/ \
   -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGci..."
 ```
 
 ### 3. Renovar token expirado
 
 ```bash
-curl -X POST http://bacon-consultas.uaeftt-ute.site/api/auth/token/refresh/ \
+curl -X POST https://bacon-consultas.uaeftt-ute.site/api/auth/token/refresh/ \
   -H "Content-Type: application/json" \
   -d '{"refresh": "eyJ0eXAiOiJKV1QiLCJhbGci..."}'
 ```
@@ -124,7 +124,7 @@ curl -X POST http://bacon-consultas.uaeftt-ute.site/api/auth/token/refresh/ \
 ### 4. Cerrar sesión (invalidar token)
 
 ```bash
-curl -X POST http://bacon-consultas.uaeftt-ute.site/api/auth/logout/ \
+curl -X POST https://bacon-consultas.uaeftt-ute.site/api/auth/logout/ \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{"refresh": "<refresh_token>"}'
