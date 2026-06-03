@@ -253,4 +253,7 @@ GET /api/pacientes/?ordering=-created_at
 
 ## Colección Thunder Client / Postman
 
-Importar el archivo `thunder-collection.json` incluido en el repositorio. Contiene los 47 endpoints organizados en 8 carpetas con dos entornos preconfigurados (Local y Producción).
+Importar el archivo `CONSULTAS-MEDICAS.postman_collection.json` incluido en el repositorio. Contiene 59 endpoints organizados en 8 carpetas.
+
+- **Local:** baseUrl = `http://localhost:8000/api`
+- **Producción:** cambiar baseUrl a `https://bacon-consultas.uaeftt-ute.site/api`
