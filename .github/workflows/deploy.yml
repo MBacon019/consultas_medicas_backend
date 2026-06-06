@@ -1,0 +1,93 @@
+name: CI/CD ConsultasAPI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: consultasapi_test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: test-secret-key-ci
+      DEBUG: "True"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DB_NAME: consultasapi_test_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      TEST_DB_NAME: consultasapi_test_db
+      CORS_ALLOW_ALL_ORIGINS: "True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync
+
+      # Nota: Quitamos el paso de "Run migrations" aquí porque chocaba con la DB.
+      # El comando "test" de abajo creará y migrará todo automáticamente usando `--noinput`.
+
+      - name: Run tests
+        run: uv run manage.py test clinic --verbosity=2 --noinput
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Entrar a la carpeta del proyecto en el VPS
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # 2. Bajar los últimos cambios desde la rama master de GitHub
+            git pull origin master
+
+            # 3. Asegurar la ruta de uv e instalar dependencias del entorno virtual
+            export PATH="$HOME/.local/bin:$PATH"
+            uv sync
+
+            # 4. Correr migraciones reales en la base de datos de producción
+            uv run manage.py migrate --noinput
+
+            # 5. Colectar los archivos estáticos (CSS/JS del admin de Django)
+            uv run manage.py collectstatic --noinput
+
+            # 6. Reiniciar Gunicorn para aplicar el nuevo código Python de inmediato
+            sudo systemctl restart gunicorn-bacon_consultas
