@@ -25,8 +25,29 @@ class RegisterSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        import datetime
+        from clinic.models import Paciente
+
         validated_data.pop('password2')
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+
+        # Crear Paciente vinculado por email; cedula usa prefijo AUTO para no
+        # colisionar con cédulas reales (que son sólo dígitos)
+        try:
+            Paciente.objects.create(
+                nombres   = user.username,
+                apellidos = '',
+                cedula    = f'AUTO{user.id}',
+                fecha_nac = datetime.date(1900, 1, 1),
+                sexo      = 'O',
+                email     = user.email,
+                telefono  = '',
+                is_active = True,
+            )
+        except Exception:
+            pass  # nunca romper el registro si el paciente falla
+
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):

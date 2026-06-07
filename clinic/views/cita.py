@@ -33,7 +33,8 @@ class CitaViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(registrado_por=self.request.user)
 
-    @action(detail=False, methods=['post'], url_path='agendar')
+    @action(detail=False, methods=['post'], url_path='agendar',
+            permission_classes=[IsAuthenticated])
     def agendar(self, request):
         serializer = AgendarCitaSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
