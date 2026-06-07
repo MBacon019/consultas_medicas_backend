@@ -31,8 +31,6 @@ class RegisterSerializer(serializers.Serializer):
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
 
-        # Crear Paciente vinculado por email; cedula usa prefijo AUTO para no
-        # colisionar con cédulas reales (que son sólo dígitos)
         try:
             Paciente.objects.create(
                 nombres   = user.username,
@@ -45,8 +43,7 @@ class RegisterSerializer(serializers.Serializer):
                 is_active = True,
             )
         except Exception:
-            pass  # nunca romper el registro si el paciente falla
-
+            pass
         return user
 
 
